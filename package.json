@@ -1,0 +1,13 @@
+{
+  "name": "mdn-revisions-profile-scrapper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/FernandoKGA/mdn-revisions-profile-scrapper.git",
+  "author": "Fernando karchiloff <fernando.kga@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "node-fetch": "^2.6.1",
+    "node-html-parser": "^1.2.20"
+  }
+}
