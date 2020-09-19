@@ -12,22 +12,18 @@ const cookies = {
   dwf_sg_task_completion: process.env.DWF_SG_TASK_COMPLETION,
 };
 
-const headers = {
-  Cookie: `${cookies.dwf_sg_task_completion}; ${cookies._ga}; ${cookies.csrftoken}; ${cookies.sessionid}; ${cookies._gid}; ${cookies._gat}`,
-};
-
 const addCookies = async (driver) => {
-  await driver.manage().addCookie({ name: '_ga', value: cookies._ga });
-  await driver.manage().addCookie({ name: '_gid', value: cookies._gid });
-  await driver.manage().addCookie({ name: '_gat', value: cookies._gat });
-  await driver.manage().addCookie({ name: 'csrftoken', value: cookies.csrftoken });
-  await driver.manage().addCookie({ name: 'sessionid', value: cookies.sessionid });
-  await driver.manage().addCookie({ name: 'dwf_sg_task_completion', value: cookies.dwf_sg_task_completion });
+  await driver.manage().addCookie({ name: '_ga', value: cookies._ga, domain: 'mozilla.org' });
+  await driver.manage().addCookie({ name: '_gid', value: cookies._gid, domain: 'mozilla.org' });
+  await driver.manage().addCookie({ name: '_gat', value: cookies._gat, domain: 'mozilla.org' });
+  await driver.manage().addCookie({ name: 'csrftoken', value: cookies.csrftoken, domain: 'developer.mozilla.org' })
+  await driver.manage().addCookie({ name: 'sessionid', value: cookies.sessionid, domain: 'developer.mozilla.org' })
+  await driver.manage().addCookie({ name: 'dwf_sg_task_completion', value: cookies.dwf_sg_task_completion, domain: 'developer.mozilla.org' });
   return driver;
 };
 
 const url = (page) => {
-  return `https://wiki.developer.mozilla.org/${process.env.LOCALE}/dashboards/revisions?user=${process.env.USER}&page=${page}`;
+  return `https://developer.mozilla.org/${process.env.LOCALE}/dashboards/revisions?user=${process.env.MOZILLA_USER}&page=${page}`;
 }
 
 const main = async () => {
@@ -38,17 +34,18 @@ const main = async () => {
     .forBrowser('firefox')
     .setFirefoxOptions(options)
     .build();
-
-  await driver.get(url(1));
+  await driver.get(url(1)); //get page to set cookies
   driver = await addCookies(driver);
+
+  // calls page again, now with cookies
+  await driver.get(url(1));
   
+  await driver.wait(() => {
+    return driver.findElement(By.className('dashboard-table'))
+  }, 10000);
+
   let dashboardTable = await driver.findElement(By.className('dashboard-table'));
-  console.log(dashboardTable);
-  // const resultFirstPage = await responseFirstPage.text();
-  // const betterpage = resultFirstPage.replace(/\s{2,}/g,'').replace(/\n/g,'');
-  
-  //'/html/body/main/div[2]/div/div/table/tbody'
-  //resultFirstPage.body.main  <div class="dashboard"> <li class="next"> <table class="dashboard-table" width="100%">
+  console.log(await dashboardTable.getText());
 
   //TODO: get rows to get unique translations and their references
   // to get next page, should find href from li class="next"
