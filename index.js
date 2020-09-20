@@ -1,6 +1,5 @@
 //Imports
 require('dotenv').config();
-const fetch = require('node-fetch');
 const { Builder, By } = require('selenium-webdriver');
 const firefox = require('selenium-webdriver/firefox');
 
@@ -26,7 +25,7 @@ const addCookies = async (driver) => {
 };
 
 const firstPage = () => {
-  return `https://developer.mozilla.org/${process.env.LOCALE}/dashboards/revisions?user=${process.env.MOZILLA_USER}&page=1`;
+  return `https://wiki.developer.mozilla.org/${process.env.LOCALE}/dashboards/revisions?user=${process.env.MOZILLA_USER}&page=1`;
 };
 
 const readRowsAndInsertInTranslationsObject = async (rows, translations) => {
@@ -76,20 +75,26 @@ const main = async () => {
 
   let driver = await new Builder()
     .forBrowser('firefox')
-    //.setFirefoxOptions(options)
+    .setFirefoxOptions(options)
     .build();
 
   try {
-
+    console.log('Starting scraping...');
+    
     await driver.get(firstPage()); //get page to set cookies
     driver = await addCookies(driver);
     
+    console.log('Got first page and setted Cookies...');
+
     let nextPageUrl = firstPage();
 
     while(nextPageUrl !== null) {
+      console.log(`Getting page: ${nextPageUrl}`);
       nextPageUrl = await readPageAndExtractInformation(driver, nextPageUrl);
     }
     
+    console.log('Scraping finished, no more pages to get, calculating amount of unique translations...');
+
     let amountTranslations = 0;
     for (const translation in translations) {
       amountTranslations += 1;
@@ -104,10 +109,6 @@ const main = async () => {
     console.error(error);
     await driver.quit();
   }
-
-  //TODO: print results
-
-  return 'Teste';
 };
 
 main().then(() => process.exit(0));
