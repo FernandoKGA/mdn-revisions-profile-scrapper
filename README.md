@@ -1,6 +1,6 @@
 # mdn-revisions-profile-scrapper
 
-This project has the objective to calculate the amount of unique translations an profile has done in the MDN.
+This project has the objective to calculate the amount of unique translations a profile has done in the MDN community.
 
 ## Installation
 
