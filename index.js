@@ -1,7 +1,10 @@
+//Imports
 require('dotenv').config();
 const fetch = require('node-fetch');
 const { Builder, By } = require('selenium-webdriver');
 const firefox = require('selenium-webdriver/firefox');
+
+const translations = {};
 
 const cookies = {
   _ga: process.env.GA,
@@ -22,9 +25,50 @@ const addCookies = async (driver) => {
   return driver;
 };
 
-const url = (page) => {
-  return `https://developer.mozilla.org/${process.env.LOCALE}/dashboards/revisions?user=${process.env.MOZILLA_USER}&page=${page}`;
-}
+const firstPage = () => {
+  return `https://developer.mozilla.org/${process.env.LOCALE}/dashboards/revisions?user=${process.env.MOZILLA_USER}&page=1`;
+};
+
+const readRowsAndInsertInTranslationsObject = async (rows, translations) => {
+  for (const row of rows) {
+    const textFromRow = await row.getText();
+    const textsFromRow = textFromRow.split(/\n/g);
+    const translatedArticle = textsFromRow[2];
+
+    if (!translations[translatedArticle]) {
+      translations[translatedArticle] = 1;
+    } else {
+      translations[translatedArticle] += 1;
+    }
+  }
+};
+
+const findNextPageReference = async (driver) => {
+  let pagination = await driver.findElement(By.className('pagination'));
+  let nextPages = await pagination.findElements(By.className('next'));
+  if (nextPages.length === 0) return null;
+  
+  let nextPage = await pagination.findElement(By.className('next'));
+  let nextPageATag = await nextPage.findElement(By.css('a'));
+  return await nextPageATag.getAttribute('href');
+};
+
+const readPageAndExtractInformation = async (driver, url) => {
+  await driver.get(url); // calls page again, now with cookies
+
+  await driver.wait(() => {
+    return driver.findElement(By.className('dashboard-table'))
+  }, 10000);
+
+  let rows = await driver.findElements(By.className('dashboard-row ')); //get rows from dashboard
+
+  await readRowsAndInsertInTranslationsObject(rows, translations);
+
+  const nextPageRef = await findNextPageReference(driver);
+  if (!nextPageRef) return null;
+
+  return nextPageRef;
+};
 
 const main = async () => {
   const options = new firefox.Options();
@@ -32,30 +76,38 @@ const main = async () => {
 
   let driver = await new Builder()
     .forBrowser('firefox')
-    .setFirefoxOptions(options)
+    //.setFirefoxOptions(options)
     .build();
-  await driver.get(url(1)); //get page to set cookies
-  driver = await addCookies(driver);
 
-  // calls page again, now with cookies
-  await driver.get(url(1));
-  
-  await driver.wait(() => {
-    return driver.findElement(By.className('dashboard-table'))
-  }, 10000);
+  try {
 
-  let dashboardTable = await driver.findElement(By.className('dashboard-table'));
-  console.log(await dashboardTable.getText());
+    await driver.get(firstPage()); //get page to set cookies
+    driver = await addCookies(driver);
+    
+    let nextPageUrl = firstPage();
 
-  //TODO: get rows to get unique translations and their references
-  // to get next page, should find href from li class="next"
-  //TODO: get next page and repeat previous steps
+    while(nextPageUrl !== null) {
+      nextPageUrl = await readPageAndExtractInformation(driver, nextPageUrl);
+    }
+    
+    let amountTranslations = 0;
+    for (const translation in translations) {
+      amountTranslations += 1;
+    }
+
+    console.log('Amount of unique translations: ' + amountTranslations);
+
+    //close webdriver
+    await driver.quit();
+
+  } catch (error) {
+    console.error(error);
+    await driver.quit();
+  }
+
   //TODO: print results
+
   return 'Teste';
 };
 
-main()
-  .then((message) => {
-    console.log(message);
-    process.exit(0);
-  });
+main().then(() => process.exit(0));
