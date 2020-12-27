@@ -1,6 +1,10 @@
-# mdn-revisions-profile-scrapper
+# mdn-revisions-profile-scrapper (ARCHIVED)
 
 This project has the objective to calculate the amount of unique translations a profile has done in the MDN community.
+
+## Archiving reason
+
+**This project has been archived because MDN changed it's content management system to Yari, then the revisions panel doesn't exists anymore, turning this project useless.**
 
 ## Installation
 
